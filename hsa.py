@@ -3,6 +3,7 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 
+
 class HSAEncoder:
     """Implementation of HSA encoding algorithm.
 
@@ -62,7 +63,6 @@ class HSAEncoder:
         self._filter_amp = new_amp
         self.filter_response = self.filter_response * new_amp
         return
-
 
     def encode(self, sgnl):
         """Encode a given signal based on init parameters.
