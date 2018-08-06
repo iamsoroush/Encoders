@@ -21,9 +21,13 @@ class HSAEncoder:
             Default: A gaussian signal with M=51, std=7.
             FIR filter as a window.
 
-        windowing_step : int , optional.
+        step : int , optional.
             Default: 1.
             Steping used when moving filter on the signal.
+
+        filter_amp : float or int, optional.
+            Default: 1
+            Amplitude of filter response, by increasing this parameter, number of spikes will decrease.
         """
 
         self.filter_response = filter_response
