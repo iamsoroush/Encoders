@@ -81,7 +81,7 @@ class HSAEncoder:
         Notes
         -----
         The spike times will be save in self._last_spikes for later plottings.
-        The encoding procedure written in compiled mode using numba.jit decorator.
+        The encoding procedure is written in compiled mode using numba.jit decorator.
         """
 
         @jit(int8[:](float64[:], float64[:], int8), nopython=True, cache=True)
@@ -124,7 +124,6 @@ class HSAEncoder:
 
 
 sgnl = np.sin(np.linspace(0, 10, 1000))
-f_response = 0.1 * signal.gaussian(M=51, std=7)
 encoder = HSAEncoder(filter_amp=0.2)
 encoder.encode(sgnl=sgnl)
 encoder.plot()
