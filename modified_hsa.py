@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
@@ -135,6 +136,7 @@ class ModifiedHSA:
         ax1.set_xlim(-0.1 * len(self._last_signal), 1.1 * len(self._last_signal))
         ax1.set_yticks([1])
         plt.show()
+
 
 sgnl = np.sin(np.linspace(0, 10, 1000))
 noise = np.random.rand(1000)/5
