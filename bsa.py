@@ -15,7 +15,7 @@ class BSAEncoder:
     """A class for BSA encoding algorithm."""
 
     def __init__(self, filter_response=None, step=1,
-                 filter_amp=1, threshold=0.1):
+                 filter_amp=0.2, threshold=3):
         """Init a BSAEncoder object.
 
         Parameters
@@ -135,7 +135,7 @@ class BSAEncoder:
                                   filter_response=self.filter_response,
                                   step=self.step,
                                   threshold=float(self.threshold))
-        self._last_spike_times = np.where(spikes == 1)
+        self._last_spike_times = np.where(spikes == 1)[0]
         return spikes
 
     def plot(self):
@@ -152,10 +152,14 @@ class BSAEncoder:
         ax1.set_yticks([1])
         plt.show()
 
+    def decode(self):
+        """Decodes last encoded signal and plots two signals together."""
 
-s = np.sin(np.linspace(0, 10, 1000))
-noise = np.random.rand(1000)/5
-s += noise
-encoder = BSAEncoder(filter_amp=0.2, threshold=3)
-encoder.encode(sgnl=s)
-encoder.plot()
+        orig = self._last_signal
+        encoded = self._last_spike_times
+        decoded = np.zeros(orig.shape)
+        for spike_time in encoded:
+            decoded[spike_time: spike_time + len(self.filter_response)] += self.filter_response
+        plt.plot(orig)
+        plt.plot(decoded)
+        plt.show()

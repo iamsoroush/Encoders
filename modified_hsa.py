@@ -12,7 +12,7 @@ class ModifiedHSA:
      the error is calculated. If error raised above a predefined threshold, a spike will emitted and
      filter response is subtracted from signal at that time point."""
 
-    def __init__(self, filter_response=None, step=1, filter_amp=1, threshold=0.1):
+    def __init__(self, filter_response=None, step=1, filter_amp=0.5, threshold=1):
         """Init a ModifiedHSA encoder object.
 
         Parameters
@@ -122,7 +122,7 @@ class ModifiedHSA:
         self._last_signal = sgnl.copy()
         spikes = calc_spike_times(sgnl=sgnl, filter_response=self.filter_response,
                                   step=self.step, threshold=float(self.threshold))
-        self._last_spike_times = np.where(spikes == 1)
+        self._last_spike_times = np.where(spikes == 1)[0]
         return spikes
 
     def plot(self):
@@ -137,10 +137,14 @@ class ModifiedHSA:
         ax1.set_yticks([1])
         plt.show()
 
+    def decode(self):
+        """Decodes last encoded signal and plots two signals together."""
 
-sgnl = np.sin(np.linspace(0, 10, 1000))
-noise = np.random.rand(1000)/5
-sgnl += noise
-encoder = ModifiedHSA(filter_amp=0.2, threshold=2)
-encoder.encode(sgnl=sgnl)
-encoder.plot()
+        orig = self._last_signal
+        encoded = self._last_spike_times
+        decoded = np.zeros(orig.shape)
+        for spike_time in encoded:
+            decoded[spike_time: spike_time + len(self.filter_response)] += self.filter_response
+        plt.plot(orig)
+        plt.plot(decoded)
+        plt.show()
