@@ -129,7 +129,7 @@ class ModifiedHSA:
         """Plot encoded version and original version of last signal."""
 
         assert self._last_signal is not None, "You must encode at least one signal to perform plotting."
-        fig, [ax0, ax1] = plt.subplots(2, 1)
+        fig, [ax0, ax1] = plt.subplots(nrows=2, sharex=True)
         fig.figsize = (18, 12)
         ax0.plot(self._last_signal)
         ax1.eventplot(self._last_spike_times)
