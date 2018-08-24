@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""Phase encoders implementation.
+
+Each encoder's source paper is mentioned in encoder's docstring.
+
+"""
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 
