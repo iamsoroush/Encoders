@@ -288,7 +288,3 @@ class DynamicLPEncoder:
         ax3.set_title("Neg neuron's potential")
         plt.show()
         return spikes
-
-
-encoder = LPEncoder(n_input=12)
-print(encoder.encode(np.random.random(12)))
