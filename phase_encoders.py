@@ -225,72 +225,58 @@ class PhotoReceptor:
         return spike_time
 
 
-class DynamicLPEncoder:
+class TemporalPhaseEncoder:
     """Phase encoder unit, for temporal input encoding.
 
     Proposed by https://ieeexplore.ieee.org/abstract/document/7086059 .
     Note that each encoder unit can encode a single temporal signal .
 
-    First instantiate an object by passing parameters, then encode desired signal using 'encode' method .
+    Instantiate an object by passing parameters, then encode desired signal using 'encode' method .
+
+    Notes from paper
+    ----------------
+    *The specific activity patterns considered in this paper are in a spatiotemporal
+     form where the precise timing of spikes is used for carrying information.
+    *Encoding unit contains a positive neuron (Pos), a negative neuron (Neg),
+     and an output neuron (Eout).
+    *Each encoding unit is connected to an input signal x and an SMO.
+    *The potentials of the Pos and Neg neurons are the summation of x and SMO.
+    *Whenever the membrane potential first crosses the threshold (θE), the
+     neuron will fire a spike.
+    *The neuron is allowed to fire only once within the whole oscillation period T .
+     Note: In this implementation, this limitation is performed via subtraction of a
+     exponentially decaying potential.
+    *The firing of either the Pos neuron or the Neg neuron will immediately
+     cause a spike from the Eout neuron.
+
     """
-    def __init__(self, threshold=1.5, phi=0, period=0.03, magnitude=1, resetting_freq_frac=0.1):
-        """Initialize an PhaseEncoderUnit instance.
+    def __init__(self, magnitude=1., freq=40., phi=0., threshold=1.5, resetting_freq_frac=0.1):
+        """Initialize an  instance.
 
         Args
         ----------
-        threshold : float. Optional.
+        magnitude (float): magnitude of SMO function.
+
+        freq (float): frequency of SMO function in Hz.
+            Default is gamma band, 40Hz.
+
+        phi (float): phase of this unit's SMO, in radian.
+            Default value is 0. User should determine every unit's phase.
+
+        threshold (float): threshold for Pos and Neg neurons.
             default value: 1.5
 
-        phi : float. Optional.
-            Phase of SMO function: SMO = magnitude * cos(omega*t + phi)
-            default value : 0.
-
-        period : float. Optional.
-            omega = 2*pi/period .
-            default value : 0.03 for generating a 33Hz (gamma) signal in SMO.
-
-        magnitude : float. Optional.
-            Magnitude of SMO function.
-            default value : 1 , by threshold=1.5, and normalized signal.
-
-        resetting_freq_frac : float. Optional.
+        resetting_freq_frac (float): frequency of subtraction exponential term for firing times.
             When firing a spike, unit's threshold will be subtracted from unit's potential,
              and effect of this subtraction will decay exponentially by a time constant,
              this time constant is (omega * resetting_freq_frac) where omega is 2 * pi / period
             default value: 0.1
         """
-        self.threshold = threshold
-        self.phi = phi
-        self.period = period
         self.magnitude = magnitude
+        self.freq = freq
+        self.phi = phi
+        self.threshold = threshold
         self.resetting_freq_frac = resetting_freq_frac
-
-    @property
-    def threshold(self):
-        return self._threshold
-
-    @threshold.setter
-    def threshold(self, new_threshold):
-        self._threshold = new_threshold
-        return
-
-    @property
-    def phi(self):
-        return self._phi
-
-    @phi.setter
-    def phi(self, new_phi):
-        self._phi = new_phi
-        return
-
-    @property
-    def period(self):
-        return self._period
-
-    @period.setter
-    def period(self, new_period):
-        self._period = new_period
-        return
 
     @property
     def magnitude(self):
@@ -298,8 +284,45 @@ class DynamicLPEncoder:
 
     @magnitude.setter
     def magnitude(self, new_magnitude):
+        assert isinstance(new_magnitude, float), "'magnitude' must be of type float."
         self._magnitude = new_magnitude
         return
+
+    @property
+    def freq(self):
+        return self._freq
+
+    @freq.setter
+    def freq(self, new_freq):
+        assert isinstance(new_freq, float), "'freq' must be of type float."
+        self._freq = new_freq
+
+    @property
+    def phi(self):
+        return self._phi
+
+    @phi.setter
+    def phi(self, new_phi):
+        assert isinstance(new_phi, float), "'phi' must be of type float."
+        self._phi = new_phi
+
+    @property
+    def threshold(self):
+        return self._threshold
+
+    @threshold.setter
+    def threshold(self, new_threshold):
+        assert isinstance(new_threshold, float), "'threshold' must be of type float."
+        self._threshold = new_threshold
+
+    @property
+    def resetting_freq_frac(self):
+        return self._resetting_freq_frac
+
+    @resetting_freq_frac.setter
+    def resetting_freq_frac(self, new_rff):
+        assert isinstance(new_rff, float), "'resetting_freq_frac' must be of type float."
+        self._resetting_freq_frac = new_rff
 
 
     def encode(self, sgnl):
@@ -307,24 +330,27 @@ class DynamicLPEncoder:
 
         Args
         ----
-        sgnl : :obj: 'np.ndarray', 1d array.
-            Encoding will implemented on normalized signal, that is scaled on miliseconds, i.e. datapoints
+        sgnl (:obj: 'np.ndarray'): input rank 1 signal, each sample point is one milisecond.
+            Encoding will implemented on normalized signal which scaled on miliseconds, i.e. datapoints
             start at 0 milisecond and end in nth milisecond while time step is 1 milisecond.
 
-        Return
-        ------
+
         :returns a binary array with len=len(sgnl) containing 1s for spikes and 0s for not spikes.
 
-        Note: sgnl steps must be Milisecond!
+        Note: sgnl steps must be milisecond!
+
         """
 
+        assert isinstance(sgnl, np.ndarray), "'sgnl' must be of type np.ndarray ."
+        assert sgnl.ndim == 1, "'sgnl' must be of rank 1 ."
+        assert sgnl.dtype == np.float64, "'sgnl' must be of dtype np.float64"
         normalized_signal = (sgnl - np.mean(sgnl)) / np.std(sgnl)
         length = normalized_signal.shape[0]
         interval = np.arange(0, sgnl.shape[0])/1000
-        omega = 2 * np.pi / self.period
+        omega = 2 * np.pi * self.freq
         SMO = self.magnitude * np.cos(omega * interval + self.phi)
         pos = SMO + normalized_signal
-        neg = -SMO -normalized_signal
+        neg = -SMO - normalized_signal
         spikes = np.zeros(sgnl.shape)
         resetting_potential = np.zeros(length, dtype=np.float64)
         resetting_signal = self.threshold * np.exp(-omega *
@@ -341,13 +367,13 @@ class DynamicLPEncoder:
                 resetting_potential[:] = 0
                 resetting_potential[step:] = resetting_signal[: length - step]
                 neg -= resetting_potential
-        self._last_signal = normalized_signal.copy()
-        self._last_spike_times = np.where(spikes == 1)[0]
-        fig, [ax0, ax1, ax2, ax3] = plt.subplots(nrows=4, sharex=True)
+        spike_times = np.where(spikes == 1)[0]
+        plt.style.use('ggplot')
+        fig, [ax0, ax1, ax2, ax3] = plt.subplots(nrows=4, sharex=True, figsize=(14, 10))
         fig.figsize = (18, 12)
-        ax0.plot(self._last_signal)
-        ax0.set_title('Original signal')
-        ax1.eventplot(self._last_spike_times)
+        ax0.plot(normalized_signal)
+        ax0.set_title('Original -normalized- signal')
+        ax1.eventplot(spike_times)
         ax1.set_title('Encoded signal')
         ax1.set_yticks([1])
         ax2.plot(pos)
@@ -355,4 +381,4 @@ class DynamicLPEncoder:
         ax3.plot(neg)
         ax3.set_title("Neg neuron's potential")
         plt.show()
-        return spikes
+        return spike_times
