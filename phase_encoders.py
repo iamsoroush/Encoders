@@ -19,46 +19,31 @@ class LPEncoder:
 
     Notes
     -----
-    Inspired by the information processing in the retina, the visual information
-     is encoded into the responses of neurons using precisely timed action potentials.
-    The intensity value of each pixel is converted to a precisely timed spike via a
-     latency encoding scheme.
-    strong stimulation leads to short spike latency, and weak stimulation results
-     in a long reaction time.
-
-    Notes
-    -----
-    Initialize the encoder, and use 'encode' method, encoder will output n_input/n_rf spike trains
-     with spike times in miliseconds.
+        Inspired by the information processing in the retina, the visual information
+         is encoded into the responses of neurons using precisely timed action potentials.
+        The intensity value of each pixel is converted to a precisely timed spike via a
+         latency encoding scheme.
+        strong stimulation leads to short spike latency, and weak stimulation results
+         in a long reaction time.
+        Initialize the encoder, and use 'encode' method, encoder will output n_input/n_rf spike trains
+         with spike times in miliseconds.
 
     """
 
-    def __init__(self, n_rf=4, t_max=1000, alpha=1, amp=1, freq=40, phi_0=0, delta_phi=None):
-        """Initialize an encoder object.
+    def __init__(self, n_rf=4, t_max=1., alpha=1., amp=1., freq=40., phi_0=0., delta_phi=None):
+        """Instantiate an encoder object.
 
         Args
         ----
-        n_rf : float.
-            Number of photoreceptors in each ganglion cell.
-
-        t_max : int.
-            Length of encoding window used for creating temporal data from static input, in mili-seconds.
-
-        alpha : float.
-            Scaling factor used in logarithmic transformation function.
-
-        amp : float.
-            Amplitude of SMO function.
-
-        freq : float.
-            Sub-threshold membrane oscillation's frequency in Hz. Default is gamma frequency, 40 Hz.
-
-        phi_0 : float.
-            Initial phase for calculating SNO phases.
-
-        delta_phi: float.
-            SMO phase difference between two adjacent photoreceptors, must be lower than 2*pi/n_rf .
+        n_rf (int): Number of photoreceptors in each ganglion cell.
+        t_max (float): Length of encoding window used for creating temporal data from static input, in seconds.
+        alpha (float): Scaling factor used in logarithmic transformation function.
+        amp (float): Amplitude of SMO function.
+        freq (float): Sub-threshold membrane oscillation's frequency in Hz. Default is gamma frequency, 40 Hz.
+        phi_0 (float): Initial phase for calculating SNO phases.
+        delta_phi (float): SMO phase difference between two adjacent photoreceptors, must be lower than 2*pi/n_rf .
             default value is 2*pi/n_rf .
+
         """
         self.n_rf = n_rf
         self.t_max = t_max
@@ -71,17 +56,80 @@ class LPEncoder:
         else:
             self.delta_phi = delta_phi
 
+    @property
+    def n_rf(self):
+        return self._n_rf
+
+    @n_rf.setter
+    def n_rf(self, new_nrf):
+        assert isinstance(new_nrf, (int, float)), "'n_rf' must be of type int or float."
+        self._n_rf = new_nrf
+
+    @property
+    def t_max(self):
+        return self._t_max
+
+    @t_max.setter
+    def t_max(self, new_tmax):
+        assert isinstance(new_tmax, float), "'t_max' must be of type float."
+        self._t_max = new_tmax
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, new_alpha):
+        assert isinstance(new_alpha, float), "'alpha' must be of type float."
+        self._alpha = new_alpha
+
+    @property
+    def amp(self):
+        return self._amp
+
+    @amp.setter
+    def amp(self, new_amp):
+        assert isinstance(new_amp, float), "'amp' must be of type float."
+        self._amp = new_amp
+
+    @property
+    def freq(self):
+        return self._freq
+
+    @freq.setter
+    def freq(self, new_freq):
+        assert isinstance(new_freq, (int, float)), "'freq' must be of type int or float."
+        self._freq = new_freq
+
+    @property
+    def phi_0(self):
+        return self._phi_0
+
+    @phi_0.setter
+    def phi_0(self, new_phi0):
+        assert isinstance(new_phi0, float), "'phi_0' must be of type float"
+        self._phi_0 = new_phi0
+
+    @property
+    def delta_phi(self):
+        return self._delta_phi
+
+    @delta_phi.setter
+    def delta_phi(self, new_deltaphi):
+        assert isinstance(new_deltaphi, float), "'delta_phi' must be of type float."
+        self._delta_phi = new_deltaphi
+
+
+
     def encode(self, input_array):
         """Encodes input array to output spike trains.
 
         Args
         ----
-        input_array: :obj: np.ndarray of shape(n_input,)
+        input_array (:obj: 'np.ndarray'): Shape must be shape(n_input,) .
 
-        Notes
-        -----
-        Encoded input will be in shape (n_output_cells, t_max) which has binary values
-         for spike time occurrence.
+        :returns Encoded spike train in shape (n_output_cells, n_rf) which contains
+         spike time occurrences for each ganglion cell.
         """
         assert isinstance(input_array, np.ndarray), "'input_array' must be of type np.ndarray"
         assert input_array.ndim == 1, "'input_array' must be 1-d tensor"
@@ -95,14 +143,18 @@ class LPEncoder:
         for row in fields:
             encoded.append(g_cell.encode(stimulation=row))
         encoded = np.array(encoded, dtype=np.int64)
+        plt.style.use('ggplot')
         plt.eventplot(encoded)
         plt.yticks([i for i in range(0, len(encoded))])
+        plt.xlabel('Simulation interval')
+        plt.ylabel('#Encoder')
+        plt.title('Encoded spike trains')
         plt.show()
         return encoded
 
 
 class GanglionCell:
-    def __init__(self, n_rf, t_max=1000, alpha=1, amp=1, freq=40, phi_0=0, delta_phi=None):
+    def __init__(self, n_rf, t_max=1., alpha=1., amp=1., freq=40., phi_0=0., delta_phi=None):
         self.n_rf = n_rf
         self.t_max = t_max
         self.alpha = alpha
@@ -118,21 +170,23 @@ class GanglionCell:
     def encode(self, stimulation):
         """Encode input stimulation.
 
-        Arg 'stimulation' must be of type np.ndarray and of shape (n_rf,) .
+        Args
+        ----
+        stimulation (:obj: np.ndarray): Must be of of shape (n_rf,) .
 
         :returns :obj: np.array of shape(n_rf,) and dtype int64
         """
         receptive_field = [PhotoReceptor(t_max=self.t_max, alpha=self.alpha) for _ in range(self.n_rf)]
-        out_spike_times = np.zeros((self.n_rf), dtype=np.int64)
+        out_spike_times = np.zeros(self.n_rf, dtype=np.int64)
         # fig, ax = plt.subplots(nrows=4, figsize=(14, 18))
         for (ind, intensity) in enumerate(stimulation):
             pr_spike_time = receptive_field[ind].get_spike_time(intensity=intensity)
             phi = self.phi_0 + ind*self.delta_phi
-            k = np.arange(0, int(self.freq * self.t_max / 1000) + 1)
-            peak_times = np.round((2*k*np.pi - phi) / self.omega * 1000).astype(np.int)
-            peak_times = peak_times[peak_times < 1000]
-            differences = np.abs(peak_times - pr_spike_time)
-            spike_time = peak_times[np.argmin(differences)]
+            k = np.arange(0, int(self.freq * self.t_max) + 1)
+            peak_times = np.round((2*k*np.pi - phi) / self.omega * 1000) # In miliseconds
+            peak_times = peak_times[peak_times < self.t_max*1000]
+            differences = np.abs(peak_times - pr_spike_time*1000)
+            spike_time = peak_times[np.argmin(differences)].astype(np.int64)
             out_spike_times[ind] = spike_time
         #     ax[ind].plot(np.cos(self.omega * np.arange(0, 1, 0.001) + phi))
         #     ax[ind].axvline(spike_time, color='b')
@@ -143,18 +197,32 @@ class GanglionCell:
 
 class PhotoReceptor:
     def __init__(self, t_max, alpha):
+        """PhotoReceptor unit.
+
+        Args
+        ----
+        t_max (float): Max output interval is seconds.
+        alpha (float): Scaling factor used in logarithmic transformation function.
+
+        """
+        assert isinstance(t_max, float)
+        assert isinstance(alpha, float)
         self.t_max = t_max
         self.alpha = alpha
 
     def get_spike_time(self, intensity):
-        """Returns spike time in mili seconds.
+        """Returns spike time in seconds.
 
-        intensity must be float and of normalized distribution.
+        Args
+        ----
+        intensity (float): Must be float and of normalized distribution.
+
+        :returns spike time in seconds, of type float.
         """
-        assert isinstance(intensity, (np.float64)),\
-            "'intensity' must be of type np.float64 or int, not {}".format(type(intensity))
-        spike_time = self.t_max - 1000 * np.log(self.alpha * intensity + 1)
-        return np.int64(spike_time)
+
+        assert isinstance(intensity, float), "'intensity' must be of type float"
+        spike_time = self.t_max - np.log(self.alpha * intensity + 1)
+        return spike_time
 
 
 class DynamicLPEncoder:
